@@ -1,0 +1,43 @@
+import { Box, Container, Heading, Spinner, Text, VStack } from '@chakra-ui/react';
+import { useQuery } from 'react-query';
+import axios from 'axios';
+import CourseCard from '../components/CourseCard';
+
+const fetchUserCourses = async () => {
+  const { data } = await axios.get('/api/users/me/courses', {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token')}`
+    }
+  });
+  return data;
+};
+
+export default function Dashboard() {
+  const { data: courses, isLoading, error } = useQuery('userCourses', fetchUserCourses);
+
+  if (isLoading) return <Spinner size="xl" />;
+  if (error) return <Text>Error loading your courses</Text>;
+
+  return (
+    <Container maxW="container.lg" py={10}>
+      <Heading as="h1" size="xl" mb={10}>
+        My Dashboard
+      </Heading>
+      
+      <Box mb={10}>
+        <Heading as="h2" size="lg" mb={6}>
+          My Courses
+        </Heading>
+        {courses.length === 0 ? (
+          <Text>You haven't purchased any courses yet.</Text>
+        ) : (
+          <VStack spacing={6} align="stretch">
+            {courses.map((course) => (
+              <CourseCard key={course._id} course={course} isPurchased />
+            ))}
+          </VStack>
+        )}
+      </Box>
+    </Container>
+  );
+}
