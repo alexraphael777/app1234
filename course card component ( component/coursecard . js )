@@ -1,0 +1,23 @@
+import { Box, Button, Heading, Image, Text } from '@chakra-ui/react';
+import Link from 'next/link';
+
+const CourseCard = ({ course, isPurchased = false }) => {
+  return (
+    <Box borderWidth="1px" borderRadius="lg" overflow="hidden" p={4}>
+      <Image src={course.imageUrl} alt={course.title} mb={4} />
+      <Heading as="h3" size="md" mb={2}>
+        {course.title}
+      </Heading>
+      <Text mb={2}>{course.description.substring(0, 100)}...</Text>
+      <Text fontWeight="bold" mb={4}>${course.price}</Text>
+      
+      <Link href={`/course/${course._id}`} passHref>
+        <Button colorScheme={isPurchased ? 'green' : 'blue'} width="full">
+          {isPurchased ? 'Continue Learning' : 'View Course'}
+        </Button>
+      </Link>
+    </Box>
+  );
+};
+
+export default CourseCard;
