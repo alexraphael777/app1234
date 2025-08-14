@@ -1,0 +1,87 @@
+import { Box, Button, Container, Heading, Spinner, Text, VStack } from '@chakra-ui/react';
+import { useQuery } from 'react-query';
+import axios from 'axios';
+import { useRouter } from 'next/router';
+import { loadStripe } from '@stripe/stripe-js';
+
+const fetchCourse = async (id) => {
+  const { data } = await axios.get(`/api/courses/${id}`);
+  return data;
+};
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+
+export default function CourseDetail() {
+  const router = useRouter();
+  const { id } = router.query;
+  
+  const { data: course, isLoading, error } = useQuery(['course', id], () => fetchCourse(id));
+
+  const handlePayment = async (gateway) => {
+    try {
+      const { data } = await axios.post(`/api/payments/${gateway}`, {
+        courseId: id
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (gateway === 'stripe') {
+        const stripe = await stripePromise;
+        await stripe.redirectToCheckout({ sessionId: data.id });
+      } else if (gateway === 'paystack') {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+    }
+  };
+
+  if (isLoading) return <Spinner size="xl" />;
+  if (error) return <Text>Error loading course</Text>;
+
+  return (
+    <Container maxW="container.lg" py={10}>
+      <Box mb={10}>
+        <Heading as="h1" size="xl" mb={4}>
+          {course.title}
+        </Heading>
+        <Text fontSize="lg" mb={4}>
+          {course.description}
+        </Text>
+        <Text fontSize="xl" fontWeight="bold" mb={4}>
+          ${course.price}
+        </Text>
+        <VStack spacing={4} align="start">
+          <Button colorScheme="blue" onClick={() => handlePayment('stripe')}>
+            Pay with Stripe (USD)
+          </Button>
+          <Button colorScheme="green" onClick={() => handlePayment('paystack')}>
+            Pay with Paystack (NGN)
+          </Button>
+        </VStack>
+      </Box>
+      
+      <Box>
+        <Heading as="h2" size="lg" mb={6}>
+          Course Content
+        </Heading>
+        {course.content.map((section, index) => (
+          <Box key={index} mb={8}>
+            <Heading as="h3" size="md" mb={4}>
+              {section.sectionTitle}
+            </Heading>
+            {section.lessons.map((lesson, idx) => (
+              <Box key={idx} p={4} mb={2} borderWidth="1px" borderRadius="md">
+                <Text fontWeight="bold">{lesson.title}</Text>
+                <Text>{lesson.description}</Text>
+                <Text fontSize="sm" color="gray.500">{lesson.duration}</Text>
+              </Box>
+            ))}
+          </Box>
+        ))}
+      </Box>
+    </Container>
+  );
+}
