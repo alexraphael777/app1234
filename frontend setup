@@ -1,0 +1,4 @@
+cd ..
+npx create-next-app frontend
+cd frontend
+npm install axios react-query react-hook-form @stripe/stripe-js @chakra-ui/react @emotion/react @emotion/styled framer-motion jwt-decode
